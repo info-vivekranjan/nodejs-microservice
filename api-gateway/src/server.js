@@ -9,6 +9,7 @@ const { RedisStore } = require("rate-limit-redis");
 const logger = require("./utils/logger");
 const proxy = require("express-http-proxy");
 const errorHandler = require("./middleware/errorHandler");
+const { validateToken } = require("./middleware/authMiddleware");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -81,6 +82,26 @@ app.use(
   }),
 );
 
+app.use(
+  "/v1/posts",
+  validateToken,
+  proxy(process.env.POST_SERVICE_URL, {
+    ...proxyOptions,
+    proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
+      proxyReqOpts.headers["Content-Type"] = "application/json";
+      proxyReqOpts.headers["x-user-id"] = srcReq.user.userId;
+
+      return proxyReqOpts;
+    },
+    userResDecorator: (proxyRes, proxyResData, userReq, userRes) => {
+      logger.info(
+        `Response received from post Service: ${proxyRes.statusCode}`,
+      );
+      return proxyResData;
+    },
+  }),
+);
+
 app.use(errorHandler);
 
 app.listen(PORT, () => {
@@ -88,5 +109,6 @@ app.listen(PORT, () => {
   logger.info(
     `Identity Service is running on : ${process.env.IDENTITY_SERVICE_URL}`,
   );
+  logger.info(`Post Service is running on : ${process.env.POST_SERVICE_URL}`);
   logger.info(`Redis Client is running on : ${process.env.REDIS_URL}`);
 });

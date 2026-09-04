@@ -1,9 +1,20 @@
 const Post = require("../models/Post");
 const logger = require("../utils/logger");
+const { validateCreatePost } = require("../utils/validation");
 
 const createPost = async (req, res) => {
   try {
     logger.info("Create Post API hit...");
+    const { error } = validateCreatePost(req.body);
+
+    if (error) {
+      logger.warn("Validation Error", error.details[0].message);
+
+      return res.status(400).json({
+        status: 400,
+        message: error.details[0].message,
+      });
+    }
 
     const { content, mediaIds } = req.body;
     const newPost = new Post({
@@ -12,7 +23,7 @@ const createPost = async (req, res) => {
       mediaIds: mediaIds || [],
     });
 
-    await Post.save();
+    await newPost.save();
     logger.info("Post created successfully", newPost);
     return res.status(201).json({
       success: true,
