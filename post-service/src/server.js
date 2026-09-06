@@ -63,7 +63,7 @@ app.use("/api/posts/create-post", sensitiveEndpointLimiter);
 app.use(
   "/api/posts",
   (req, res, next) => {
-    req.resdisClient = redisClient;
+    req.redisClient = redisClient;
     next();
   },
   postRoutes,
