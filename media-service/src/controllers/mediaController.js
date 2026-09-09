@@ -14,10 +14,10 @@ const uploadMedia = async (req, res) => {
       });
     }
 
-    const { originalName, mimeType, buffer } = req.file;
+    const { originalname, mimetype, buffer } = req.file;
     const userId = req.user.userId;
 
-    logger.info(`File Details - name:${originalName} & mimeType: ${mimeType}`);
+    logger.info(`File Details - name:${originalname} & mimeType: ${mimetype}`);
     logger.info("Upload to cloudinary started...");
 
     let cloudinaryUploadResult = await uploadMediaToCloudinary(req.file);
@@ -28,8 +28,8 @@ const uploadMedia = async (req, res) => {
 
     const newlyCreatedMedia = new Media({
       publicId: cloudinaryUploadResult.public_id,
-      originalName,
-      mimeType,
+      originalName: originalname,
+      mimeType: mimetype,
       url: cloudinaryUploadResult.secure_url,
       userId,
     });

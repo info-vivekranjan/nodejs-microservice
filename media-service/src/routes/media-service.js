@@ -3,7 +3,7 @@ const multer = require("multer");
 
 const logger = require("../utils/logger");
 const { uploadMedia } = require("../controllers/mediaController");
-const authenticateRequest = require("../middleware/authMiddleware");
+const { authenticateRequest } = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -19,27 +19,36 @@ router.post(
   authenticateRequest,
   (req, res, next) => {
     upload(req, res, function (err) {
+      // Multer error
       if (err instanceof multer.MulterError) {
         logger.error("Multer upload error", err);
-        res.status(400).json({
+
+        return res.status(400).json({
+          success: false,
           message: "Multer upload error",
-          err: err,
-          stack: err.stack,
-        });
-      } else {
-        logger.error("Unknown error occoured while uploading", err);
-        res.status(500).json({
-          message: "Unknown error occoured while uploading",
-          err: err,
-          stack: err.stack,
+          error: err.message,
         });
       }
 
-      if (!req.file) {
-        return res.status(400).json({
-          message: "No file found!!",
+      // Other upload error
+      if (err) {
+        logger.error("Unknown error occurred while uploading", err);
+
+        return res.status(500).json({
+          success: false,
+          message: "Unknown error occurred while uploading",
+          error: err.message,
         });
       }
+
+      // No error, but no file
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No file found!",
+        });
+      }
+
       next();
     });
   },
