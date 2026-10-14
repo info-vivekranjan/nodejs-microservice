@@ -10,8 +10,13 @@ const helmet = require("helmet");
 const Redis = require("ioredis");
 const logger = require("./utils/logger");
 const connect = require("./config/db");
-const { connectRabbitMQ } = require("./utils/rabbitmq");
+const { connectRabbitMQ, consumeEvent } = require("./utils/rabbitmq");
 const errorHandler = require("./middleware/errorHandler");
+const searchRoutes = require("./routes/searchRoutes.js");
+const {
+  handlePostCreated,
+  handlePostDeleted,
+} = require("./eventHandlers/searchEventHandlers.js");
 
 const app = express();
 const PORT = process.env.PORT || 5004;
@@ -37,7 +42,7 @@ app.use(
     req.redisClient = redisClient;
     next();
   },
-  // postRoutes,
+  searchRoutes,
 );
 
 //Error handler middleware
@@ -47,6 +52,10 @@ app.listen(PORT, async () => {
   try {
     await connect();
     await connectRabbitMQ();
+
+    await consumeEvent("post.created", handlePostCreated);
+    await consumeEvent("post.deleted", handlePostDeleted);
+
     logger.info(`Post Server running on : ${PORT}`);
   } catch (error) {
     logger.error("Failed to connect to server", error);
